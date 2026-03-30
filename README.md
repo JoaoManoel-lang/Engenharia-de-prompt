@@ -22,5 +22,3 @@ Estou à disposição para uma entrevista ou aula teste para demonstrar minha me
 
 Atenciosamente,
 
-**[Seu Nome Completo]** [Seu LinkedIn] | [Seu GitHub]  
-[Seu Telefone]
