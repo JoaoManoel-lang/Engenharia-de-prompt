@@ -1,0 +1,119 @@
+import os
+import shutil
+import tkinter as tk
+from tkinter import filedialog, messagebox
+from datetime import datetime
+
+categorias = {
+    "Imagens": ["jpg", "jpeg", "png", "gif", "bmp", "webp"],
+    "Documentos": ["pdf", "doc", "docx", "txt", "xls", "xlsx", "ppt", "pptx"],
+    "Videos": ["mp4", "mkv", "avi", "mov", "wmv"],
+    "Musicas": ["mp3", "wav", "ogg"],
+    "Compactados": ["zip", "rar", "7z", "tar", "gz"]
+}
+
+def encontrar_categoria(extensao):
+    for categoria, extensoes in categorias.items():
+        if extensao in extensoes:
+            return categoria
+    return "Outros"
+
+def gerar_nome_unico(pasta, nome_arquivo):
+    nome, extensao = os.path.splitext(nome_arquivo)
+    contador = 1
+    novo_nome = nome_arquivo
+
+    while os.path.exists(os.path.join(pasta, novo_nome)):
+        novo_nome = f"{nome} ({contador}){extensao}"
+        contador += 1
+
+    return novo_nome
+
+def selecionar_pasta():
+    pasta = filedialog.askdirectory(title="Selecione a pasta")
+    if pasta:
+        caminho_var.set(pasta)
+
+def organizar_arquivos():
+    pasta_origem = caminho_var.get()
+    modo = modo_var.get()
+
+    if not pasta_origem:
+        messagebox.showwarning("Aviso", "Selecione uma pasta primeiro!")
+        return
+
+    try:
+        for arquivo in os.listdir(pasta_origem):
+            caminho_arquivo = os.path.join(pasta_origem, arquivo)
+
+            if os.path.isfile(caminho_arquivo):
+                extensao = arquivo.split(".")[-1].lower() if "." in arquivo else ""
+                categoria = encontrar_categoria(extensao)
+
+                # Data
+                timestamp = os.path.getmtime(caminho_arquivo)
+                data = datetime.fromtimestamp(timestamp)
+                ano = str(data.year)
+                mes = f"{data.month:02d}"
+
+                # 📁 Monta destino conforme modo escolhido
+                if modo == "tipo":
+                    pasta_destino = os.path.join(pasta_origem, categoria)
+
+                elif modo == "data":
+                    pasta_destino = os.path.join(pasta_origem, ano, mes)
+
+                else:  # tipo + data
+                    pasta_destino = os.path.join(pasta_origem, categoria, ano, mes)
+
+                os.makedirs(pasta_destino, exist_ok=True)
+
+                nome_final = gerar_nome_unico(pasta_destino, arquivo)
+
+                shutil.move(caminho_arquivo, os.path.join(pasta_destino, nome_final))
+
+        messagebox.showinfo("Sucesso", "Arquivos organizados com sucesso!")
+
+    except Exception as e:
+        messagebox.showerror("Erro", f"Ocorreu um erro:\n{e}")
+
+# --- Interface ---
+janela = tk.Tk()
+janela.title("Organizador de Arquivos")
+janela.geometry("520x260")
+janela.resizable(False, False)
+
+caminho_var = tk.StringVar()
+modo_var = tk.StringVar(value="tipo")
+
+tk.Label(janela, text="Organizador de Arquivos", font=("Arial", 16)).pack(pady=10)
+
+# Seleção de pasta
+frame = tk.Frame(janela)
+frame.pack(pady=5)
+
+tk.Entry(frame, textvariable=caminho_var, width=40).pack(side=tk.LEFT, padx=5)
+tk.Button(frame, text="Selecionar", command=selecionar_pasta).pack(side=tk.LEFT)
+
+# 🔘 Opções de organização
+tk.Label(janela, text="Modo de organização:").pack(pady=10)
+
+frame_opcoes = tk.Frame(janela)
+frame_opcoes.pack()
+
+tk.Radiobutton(frame_opcoes, text="Por Tipo", variable=modo_var, value="tipo").pack(anchor="w")
+tk.Radiobutton(frame_opcoes, text="Por Data", variable=modo_var, value="data").pack(anchor="w")
+tk.Radiobutton(frame_opcoes, text="Tipo + Data", variable=modo_var, value="tipo_data").pack(anchor="w")
+
+# Botão principal
+tk.Button(
+    janela,
+    text="Organizar",
+    command=organizar_arquivos,
+    bg="#4CAF50",
+    fg="white",
+    padx=10,
+    pady=5
+).pack(pady=20)
+
+janela.mainloop()
